@@ -1,0 +1,44 @@
+# OS By Drug and Stage at Diagnosis
+
+os_drug_stage_pem1 <- merge(pemetrexed, stage,
+                            by = "sample")
+
+os_drug_stage_pem <- na.omit(os_drug_stage_pem1)
+
+os_drug_stage_pac1 <- merge(paclitaxel, stage,
+                            by = "sample")
+os_drug_stage_pac <- na.omit(os_drug_stage_pac1)
+
+os_drug_stage_cis1 <- merge(cisplatin, stage,
+                            by = "sample")
+os_drug_stage_cis <- na.omit(os_drug_stage_cis1)
+
+os_drug_stage_carb1 <- merge(carboplatin, stage,
+                             by = "sample")
+os_drug_stage_carb <- na.omit(os_drug_stage_carb1)
+
+os_drug_stage_erl1 <- merge(erlotinib, stage,
+                            by = "sample")
+os_drug_stage_erl <- na.omit(os_drug_stage_erl1)
+
+
+os_drug_stage_pem_survival <- survdiff(Surv(os_drug_stage_pem$X_TIME_TO_EVENT, os_drug_stage_pem$X_EVENT)
+                                       ~ as.factor(os_drug_stage_pem$tumor_stage.diagnoses))
+os_drug_stage_pem_survival
+
+os_drug_stage_pac_survival <- survdiff(Surv(os_drug_stage_pac$X_TIME_TO_EVENT, os_drug_stage_pac$X_EVENT)
+                                       ~ as.factor(os_drug_stage_pac$tumor_stage.diagnoses))
+os_drug_stage_pac_survival
+
+os_drug_stage_cis_survival <- survdiff(Surv(os_drug_stage_cis$X_TIME_TO_EVENT, os_drug_stage_cis$X_EVENT)
+                                       ~ as.factor(os_drug_stage_cis$tumor_stage.diagnoses))
+os_drug_stage_cis_survival
+
+os_drug_stage_carb_survival <- survdiff(Surv(os_drug_stage_carb$X_TIME_TO_EVENT, os_drug_stage_carb$X_EVENT)
+                                        ~ as.factor(os_drug_stage_carb$tumor_stage.diagnoses))
+os_drug_stage_carb_survival
+
+os_drug_stage_erl_survival <- survdiff(Surv(os_drug_stage_erl$X_TIME_TO_EVENT, os_drug_stage_erl$X_EVENT)
+                                       ~ as.factor(os_drug_stage_erl$tumor_stage.diagnoses))
+os_drug_stage_erl_survival
+
