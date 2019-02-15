@@ -1,0 +1,435 @@
+## Uploading Data
+# Clinical Data
+setwd("~/Desktop/nsclc/")
+read.csv(file = "xena_gdctcga_adenocarcinoma_phenotype.csv", header = TRUE)
+phen.dat <- read.csv(file = "xena_gdctcga_adenocarcinoma_phenotype.csv", header = TRUE)
+
+phen.dat[phen.dat==""] <- NA
+
+# Survival Data
+setwd("~/Desktop/nsclc/")
+read.csv(file = "xena_gdctcga_adenocarcinoma_survival.csv", header = TRUE)
+os.dat <- read.csv(file = "xena_gdctcga_adenocarcinoma_survival.csv", header = TRUE)
+os.dat1 <- os.dat[ , c(1, 2, 4)]
+
+# Merge Phenotype and Survivial Data
+names(phen.dat)[1]<-"sample"
+all.dat <- merge(phen.dat, os.dat,
+                 by = "sample")
+
+# Staging Frequencies
+stage <- na.omit(all.dat$tumor_stage.diagnoses)
+counts <- table(stage)
+
+barplot(counts, 
+        main="Staging Data",
+        xlab="Tumor Stage", 
+        ylab="Frequency")
+
+# Drug Therapy Frequency
+drugs <- na.omit(all.dat$drug_name)
+drugs1 <-table(drugs)
+
+# Drug Therapy Data
+drug1 <- all.dat[ , c(1, 33)]
+drug <- na.omit(drug1)
+
+# Staging Data
+stage1 <- all.dat[ , c(1,123)]
+stage1$tumor_stage.diagnoses <- gsub("not reported", "", stage1$tumor_stage.diagnoses)
+stage1[stage1==""] <- NA
+stage <- na.omit(stage1)
+
+#Compiled Stages (stage i = stage i, stage ia, stage ib, etc)
+
+stage$tumor_stage.diagnoses <- gsub("stage ia", "stage i", stage$tumor_stage.diagnoses)
+stage$tumor_stage.diagnoses <- gsub("stage ib", "stage i", stage$tumor_stage.diagnoses)
+
+stage$tumor_stage.diagnoses <- gsub("stage iia", "stage ii", stage$tumor_stage.diagnoses)
+stage$tumor_stage.diagnoses <- gsub("stage iib", "stage ii", stage$tumor_stage.diagnoses)
+
+stage$tumor_stage.diagnoses <- gsub("stage iiia", "stage iii", stage$tumor_stage.diagnoses)
+stage$tumor_stage.diagnoses <- gsub("stage iiib", "stage iii", stage$tumor_stage.diagnoses)
+
+# Race
+race1 <- all.dat[, c(1,107)]
+race1$race.demographic <- gsub("not reported", "", race1$race.demographic)
+race <- na.omit(race1)
+
+# Gender
+gender1 <- all.dat[ , c(1,106)]
+gender1$gender.demographic <- gsub("not reported", "", gender1$gender.demographic)
+gender <- na.omit(gender1)
+
+# Days to Start Drug Therapy
+ddt1 <- all.dat[ , c(1,25)]
+ddt <- na.omit(ddt1)
+
+# Cigarettes/Day
+cpd1 <- all.dat[ , c(1,126)]
+cpd <- na.omit(cpd1)
+
+# Years Smoked
+years_smoke1 <- all.dat[ , c(1,127)]
+years_smoke <- na.omit(years_smoke1)
+
+# Stage Survival (OS)
+stagedat1 <- merge(stage, os,
+                   by = "sample")
+stagedat <- na.omit(stagedat1)
+dim(stagedat)
+
+stagei <- stagedat[c(stagedat$tumor_stage.diagnoses == "stage i"), ]
+stageii <- stagedat[c(stagedat$tumor_stage.diagnoses == "stage ii"), ]
+stageiii <- stagedat[c(stagedat$tumor_stage.diagnoses == "stage iii"), ]
+stageiv <- stagedat[c(stagedat$tumor_stage.diagnoses == "stage iv"), ]
+
+## Survival Analysis
+library(survival)
+
+# OS Survival Analysis
+
+    # OS Data*
+os1 <- all.dat[ , c(1, 148, 150)]
+os <- na.omit(os1)
+
+
+    # OS by Drug
+dat0 <- merge(drug, os,
+              by = "sample")
+dat2 <- na.omit(dat0)
+
+pemetrexed <- dat2[c(dat2$drug_name == "Pemetrexed"), ]
+paclitaxel <- dat2[c(dat2$drug_name == "Paclitaxel"), ]
+cisplatin <- dat2[c(dat2$drug_name == "Cisplatin"), ]
+carboplatin <- dat2[c(dat2$drug_name == "Carboplatin"), ]
+erlotinib  <- dat2[c(dat2$drug_name == "Erlotinib"), ]
+
+os_drug <- rbind(pemetrexed, paclitaxel, cisplatin, carboplatin, erlotinib)
+dim(os_drug)
+
+os_drug_survival <- survdiff(Surv(os_drug$X_TIME_TO_EVENT, os_drug$X_EVENT) ~ os_drug$drug_name)
+os_drug_survival
+
+##Kaplan-Meier for OS By Drug
+pemetrexed_survival <- survfit(Surv(pemetrexed$X_TIME_TO_EVENT, pemetrexed$X_EVENT) ~ 1)
+summary(pemetrexed_survival)                  
+plot(pemetrexed_survival, main="OS on Pemetrexed", xlab="Months", ylab="Overall Survival")
+
+paclitaxel_survival <- survfit(Surv(paclitaxel$X_TIME_TO_EVENT, paclitaxel$X_EVENT) ~ 1)
+summary(paclitaxel_survival)
+plot(paclitaxel_survival, main="OS on Paclitaxel", xlab="Months", ylab="Overall Survival")
+
+cisplatin_survival <- survfit(Surv(cisplatin$X_TIME_TO_EVENT, cisplatin$X_EVENT) ~ 1)
+summary(cisplatin_survival)
+plot(cisplatin_survival, main="OS on Cisplatin", xlab="Months", ylab="Overall Survival")
+
+carboplatin_survival <- survfit(Surv(caboplatin$X_TIME_TO_EVENT, carboplatin$X_EVENT) ~ 1)
+summary(paclitaxel_survival)
+plot(paclitaxel_survival, main="OS on Carboplatin", xlab="Months", ylab="Overall Survival")
+
+erlotinib_survival <- survfit(Surv(erlotinib$X_TIME_TO_EVENT, erlotinib$X_EVENT) ~ 1)
+summary(erlotinib_survival)
+plot(erlotinib_survival, main="OS on Erlotinib", xlab="Months", ylab="Overall Survival")
+
+
+
+
+    # OS By Stage at Diagnosis
+
+os_stage_drug_survival <- survdiff(Surv(os_stage$X_TIME_TO_EVENT, os_stage$X_EVENT)
+                                   ~ os_stage$drug_name + os_stage$tumor_stage.diagnoses)
+
+os_stage_drug_survival
+
+
+stagei_survival <- survfit(Surv(stagei$X_TIME_TO_EVENT, stagei$X_EVENT) ~ 1)
+summary(stagei_survival)                    
+plot(stagei_survival, main="OS for Stage i ", xlab="Months", ylab="Overall Survival")
+
+stageii_survival <- survfit(Surv(stageii$X_TIME_TO_EVENT, stageii$X_EVENT) ~ 1)
+summary(stageii_survival)                        
+plot(stageii_survival, main="OS for Stage ii ", xlab="Months", ylab="Overall Survival")
+
+stageiii_survival <- survfit(Surv(stageiii$X_TIME_TO_EVENT, stageiii$X_EVENT) ~ 1)
+summary(stageiii_survival)                        
+plot(stageiii_survival, main="OS for Stage iii ", xlab="Months", ylab="Overall Survival")
+
+stageiv_survival <- survfit(Surv(stageiv$X_TIME_TO_EVENT, stageiv$X_EVENT) ~ 1)
+summary(stageiv_survival)                        
+plot(stageiv_survival, main="OS for Stage iv ", xlab="Months", ylab="Overall Survival")
+
+
+    # OS By Drug and Stage at Diagnosis
+
+os_drug_stage_pem1 <- merge(pemetrexed, stage,
+                       by = "sample")
+
+os_drug_stage_pem <- na.omit(os_drug_stage_pem1)
+
+os_drug_stage_pac1 <- merge(paclitaxel, stage,
+                            by = "sample")
+os_drug_stage_pac <- na.omit(os_drug_stage_pac1)
+
+os_drug_stage_cis1 <- merge(cisplatin, stage,
+                            by = "sample")
+os_drug_stage_cis <- na.omit(os_drug_stage_cis1)
+
+os_drug_stage_carb1 <- merge(carboplatin, stage,
+                            by = "sample")
+os_drug_stage_carb <- na.omit(os_drug_stage_carb1)
+
+os_drug_stage_erl1 <- merge(erlotinib, stage,
+                            by = "sample")
+os_drug_stage_erl <- na.omit(os_drug_stage_erl1)
+
+
+os_drug_stage_pem_survival <- survdiff(Surv(os_drug_stage_pem$X_TIME_TO_EVENT, os_drug_stage_pem$X_EVENT)
+                                      ~ as.factor(os_drug_stage_pem$tumor_stage.diagnoses))
+os_drug_stage_pem_survival
+
+os_drug_stage_pac_survival <- survdiff(Surv(os_drug_stage_pac$X_TIME_TO_EVENT, os_drug_stage_pac$X_EVENT)
+                                       ~ as.factor(os_drug_stage_pac$tumor_stage.diagnoses))
+os_drug_stage_pac_survival
+
+os_drug_stage_cis_survival <- survdiff(Surv(os_drug_stage_cis$X_TIME_TO_EVENT, os_drug_stage_cis$X_EVENT)
+                                       ~ as.factor(os_drug_stage_cis$tumor_stage.diagnoses))
+os_drug_stage_cis_survival
+
+os_drug_stage_carb_survival <- survdiff(Surv(os_drug_stage_carb$X_TIME_TO_EVENT, os_drug_stage_carb$X_EVENT)
+                                       ~ as.factor(os_drug_stage_carb$tumor_stage.diagnoses))
+os_drug_stage_carb_survival
+
+os_drug_stage_erl_survival <- survdiff(Surv(os_drug_stage_erl$X_TIME_TO_EVENT, os_drug_stage_erl$X_EVENT)
+                                       ~ as.factor(os_drug_stage_erl$tumor_stage.diagnoses))
+os_drug_stage_erl_survival
+
+
+    # OS for Stage and Drug
+
+os_stage2 <- merge(dat2, stage,
+              by = "sample")
+os_stage1 <- na.omit(os_stage2)
+
+os_stage_pem <- os_stage1[c(os_stage1$drug_name =="Pemetrexed"), ]
+os_stage_pac <- os_stage1[c(os_stage1$drug_name =="Paclitaxel"), ]
+os_stage_cis <- os_stage1[c(os_stage1$drug_name =="Cisplatin"), ]
+os_stage_carb <- os_stage1[c(os_stage1$drug_name =="Carboplatin"), ]
+os_stage_erl <- os_stage1[c(os_stage1$drug_name =="Erlotinib"), ]
+
+os_stage <- rbind(os_stage_pem, os_stage_pac, os_stage_cis, os_stage_carb, os_stage_erl)
+dim(os_stage)
+
+##Survdiff with 2 ~
+
+os_stage_drug_survival <- survdiff(Surv(os_stage$X_TIME_TO_EVENT, os_stage$X_EVENT)
+                              ~ os_stage$drug_name + os_stage$tumor_stage.diagnoses)
+
+os_stage_drug_survival
+
+
+##Survdiff more complicated...
+
+  # OS for Stage i and Drug
+
+os_stage_i <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage i"), ]
+
+os_stage_i_survival <- survdiff(Surv(os_stage_i$X_TIME_TO_EVENT, 
+                                          os_stage_i$X_EVENT) ~ as.factor(os_stage_i$drug_name))
+
+os_stage_i_survival
+
+  # OS for Stage ii and Drug
+
+os_stage_ii <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage ii"), ]
+
+os_stage_ii_survival <- survdiff(Surv(os_stage_ii$X_TIME_TO_EVENT, 
+                                     os_stage_ii$X_EVENT) ~ as.factor(os_stage_ii$drug_name))
+
+os_stage_ii_survival
+
+  # OS for Stage iii and Drug
+
+os_stage_iii <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage iii"), ]
+
+os_stage_iii_survival <- survdiff(Surv(os_stage_iii$X_TIME_TO_EVENT, 
+                                      os_stage_iii$X_EVENT) ~ as.factor(os_stage_iii$drug_name))
+
+os_stage_iii_survival
+
+  # OS for Stage iv and Drug
+
+os_stage_iv <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage iv"), ]
+
+os_stage_iv_survival <- survdiff(Surv(os_stage_iv$X_TIME_TO_EVENT, 
+                                      os_stage_iv$X_EVENT) ~ as.factor(os_stage_iv$drug_name))
+
+os_stage_iv_survival
+
+  # Misc Variables OS Survival
+
+dat_cpd_years <- merge(cpd, years_smoke, by = "sample")
+
+dat_gender_race1 <- merge(gender, race, by = "sample")
+os_dat_gender_race1 <- merge(dat_gender_race1, os.dat1, by = "sample")
+os_dat_gender_race <- na.omit(os_dat_gender_race1)
+dim(os_dat_gender_race)
+
+os_gender <- survdiff(Surv(os_dat_gender_race$X_TIME_TO_EVENT,
+                                os_dat_gender_race$X_EVENT) ~ os_dat_gender_race$gender.demographic)
+
+os_gender
+
+os_race <- survdiff(Surv(os_dat_gender_race$X_TIME_TO_EVENT,
+                         os_dat_gender_race$X_EVENT) ~ os_dat_gender_race$race.demographic)
+os_race
+
+os_gender_race <- survdiff(Surv(os_dat_gender_race$X_TIME_TO_EVENT,
+                                os_dat_gender_race$X_EVENT) ~ os_dat_gender_race$gender.demographic
+                           + os_dat_gender_race$race.demographic)
+os_gender_race
+
+os_dat_gender_race_drug1 <- merge (os_dat_gender_race, drug, by = "sample")
+os_dat_gender_race_drug <- na.omit(os_dat_gender_race_drug1)
+
+os_gender_race_drug <- survdiff(Surv(os_dat_gender_race_drug$X_TIME_TO_EVENT,
+                                     os_dat_gender_race_drug$X_EVENT) ~ os_dat_gender_race_drug$gender.demographic
+                                + os_dat_gender_race_drug$race.demographic + os_dat_gender_race_drug$drug_name)
+os_gender_race_drug
+     
+# New Tumor Event Survival Analysis
+
+# New Tumor Survival Data
+new.tum1 <- all.dat[ , c(1, 28, 55)]
+new.tum <-na.omit(new.tum1)
+
+
+# New Tumor Data
+dat3 <- merge(drug, new.tum,
+              by = "sample")
+dat4 <- na.omit(dat3)
+
+dat4$new_tumor_event_after_initial_treatment <- gsub("NO", "0", dat4$new_tumor_event_after_initial_treatment)
+dat4$new_tumor_event_after_initial_treatment <- gsub("YES", "1", dat4$new_tumor_event_after_initial_treatment)
+dat4$new_tumor_event_after_initial_treatment <- as.numeric(as.character(dat4$new_tumor_event_after_initial_treatment))
+
+
+ # New Tumor Survival Analysis By Drug
+
+pemetrexed_nt <- dat4[c(dat4$drug_name == "Pemetrexed"), ]
+paclitaxel_nt <- dat4[c(dat4$drug_name == "Paclitaxel"), ]
+cisplatin_nt <- dat4[c(dat4$drug_name == "Cisplatin"), ]
+carboplatin_nt <- dat4[c(dat4$drug_name == "Carboplatin"), ]
+erlotinib_nt <- dat4[c(dat4$drug_name == "Erlotinib"), ]
+
+
+    ##New Tumor Data with only top 5 drugs
+new_tum <- rbind(pemetrexed_nt, paclitaxel_nt, cisplatin_nt, carboplatin_nt, erlotinib_nt)
+
+nt_survival_drug <- survdiff(Surv(new_tum$days_to_new_tumor_event_after_initial_treatment, 
+                                  new_tum$new_tumor_event_after_initial_treatment) ~ new_tum$drug_name)
+nt_survival_drug
+
+
+##By each drug plot
+pemetrexed_nt_survival <- survfit(Surv(pemetrexed_nt$days_to_new_tumor_event_after_initial_treatment, 
+                                       pemetrexed_nt$new_tumor_event_after_initial_treatment) ~ 1)
+summary(pemetrexed_survival)                        
+plot(pemetrexed_nt_survival, main="Months to New Tumor Event on Pemetrexed", xlab="Months", ylab="New Tumor Event")
+
+
+paclitaxel_nt_survival <- survfit(Surv(paclitaxel_nt$days_to_new_tumor_event_after_initial_treatment, 
+                                       paclitaxel_nt$new_tumor_event_after_initial_treatment) ~ 1)
+summary(paclitaxel_nt_survival)                        
+plot(paclitaxel_nt_survival, main="Months to New Tumor Event on Paclitaxel", xlab="Months", ylab="New Tumor Event")
+
+
+cisplatin_nt_survival <- survfit(Surv(cisplatin_nt$days_to_new_tumor_event_after_initial_treatment, 
+                                      cisplatin_nt$new_tumor_event_after_initial_treatment) ~ 1)
+summary(cisplatin_nt_survival)
+plot(cisplatin_nt_survival, main="Months to New Tumor Event on Cisplatin", xlab="Months", ylab="New Tumor Event")
+
+carboplatin_nt_survival <- survfit(Surv(carboplatin_nt$days_to_new_tumor_event_after_initial_treatment,
+                                        carboplatin_nt$new_tumor_event_after_initial_treatment) ~ 1)
+summary(carboplatin_nt_survival)
+plot(cisplatin_nt_survival, main="Months to New Tumor Event on Carboplatin", xlab="Months", ylab="New Tumor Event")
+
+erlotinib_nt_survival <- survfit(Surv(erlotinib_nt$days_to_new_tumor_event_after_initial_treatment,
+                                      erlotinib_nt$new_tumor_event_after_initial_treatment) ~ 1)
+summary(erlotinib_nt_survival)
+plot(erlotinib_nt_survival, main="Months to New Tumor Event on Erlotinib", xlab="Months", ylab="New Tumor Event")
+
+
+# New Tumor Survival Analysis By Stage
+
+nt_stage2 <- merge(dat4, stage,
+                   by = "sample")
+nt_stage1 <- na.omit(nt_stage2)
+
+nt_stage_pem <- nt_stage1[c(nt_stage1$drug_name =="Pemetrexed"), ]
+nt_stage_pac <- nt_stage1[c(nt_stage1$drug_name =="Paclitaxel"), ]
+nt_stage_cis <- nt_stage1[c(nt_stage1$drug_name =="Cisplatin"), ]
+nt_stage_carb <- nt_stage1[c(nt_stage1$drug_name =="Carboplatin"), ]
+nt_stage_erl <- nt_stage1[c(nt_stage1$drug_name =="Erlotinib"), ]
+
+nt_stage <- rbind(nt_stage_pem, nt_stage_pac, nt_stage_cis, nt_stage_carb, nt_stage_erl)
+
+nt_stagei <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage i"), ]
+nt_stageii <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage ii"), ]
+nt_stageiii <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage iii"), ]
+nt_stageiv <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage iv"), ]
+
+    # Stage i
+stagei_nt_survival <- survfit(Surv(nt_stagei$days_to_new_tumor_event_after_initial_treatment,
+                                   nt_stagei$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stagei_nt_survival)                 
+plot(stagei_nt_survival, main="Months to New Tumor Event for Stage i ", xlab="Months", ylab="New Tumor Event")
+
+    # Stage ii
+stageii_nt_survival <- survfit(Surv(nt_stageii$days_to_new_tumor_event_after_initial_treatment,
+                                   nt_stageii$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stageii_nt_survival)                 
+plot(stageii_nt_survival, main="Months to New Tumor Event for Stage ii ", xlab="Months", ylab="New Tumor Event")
+
+    # Stage iii
+stageiii_nt_survival <- survfit(Surv(nt_stageiii$days_to_new_tumor_event_after_initial_treatment,
+                                   nt_stageiii$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stageiii_nt_survival)                 
+plot(stageiii_nt_survival, main="Months to New Tumor Event for Stage iii", xlab="Months", ylab="New Tumor Event")
+
+    # Stage iv
+stageiv_nt_survival <- survfit(Surv(nt_stageiv$days_to_new_tumor_event_after_initial_treatment,
+                                   nt_stageiv$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stageiv_nt_survival)                 
+plot(stageiv_nt_survival, main="Months to New Tumor Event for Stage iv", xlab="Months", ylab="New Tumor Event")
+
+
+nt_survival_stage <- survdiff(Surv(nt_stage$days_to_new_tumor_event_after_initial_treatment,
+                                  nt_stage$new_tumor_event_after_initial_treatment)
+                             ~ nt_stage$tumor_stage.diagnoses)
+nt_survival_stage
+
+# New Tumor Survival Analysis By Drug and Stage
+
+nt_survival_stage_drug <- survdiff(Surv(nt_stage$days_to_new_tumor_event_after_initial_treatment,
+                                   nt_stage$new_tumor_event_after_initial_treatment)
+                              ~ nt_stage$tumor_stage.diagnoses + nt_stage$drug_name)
+
+nt_survival_stage_drug
+
+# New Tumor Survival Cigarettes Per Day (cpd)
+
+nt_cpd <- merge(new_tum, cpd, by = "sample")
+
+##NOT WORKING
+nt_cpd[which(nt_cpd$cigarettes_per_day.exposures < 1)] <- "a"
+nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 1 & nt_cpd$cigarettes_per_day.exposures < 2)] <- "b"
+nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 2 & nt_cpd$cigarettes_per_day.exposures < 3)] <- "c"
+nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 3 & nt_cpd$cigarettes_per_day.exposures < 4)] <- "d"
+nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 4 & nt_cpd$cigarettes_per_day.exposures < 5)] <- "e"
+nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 5 & nt_cpd$cigarettes_per_day.exposures < 6)] <- "f"
+
+nt_survival_cpd <- survdiff(Surv(nt_cpd$days_to_new_tumor_event_after_initial_treatment,
+                                 nt_cpd$new_tumor_event_after_initial_treatment) ~ nt_cpd$cigarettes_per_day.exposures)
+
+# New Tumor Survival Years Smoked
