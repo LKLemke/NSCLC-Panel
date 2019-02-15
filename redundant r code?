@@ -88,3 +88,59 @@ os_stage_iv_survival <- survdiff(Surv(os_stage_iv$X_TIME_TO_EVENT,
                                       os_stage_iv$X_EVENT) ~ as.factor(os_stage_iv$drug_name))
 
 os_stage_iv_survival
+
+
+nt_stage2 <- merge(dat4, stage,
+                   by = "sample")
+nt_stage1 <- na.omit(nt_stage2)
+
+nt_stage_pem <- nt_stage1[c(nt_stage1$drug_name =="Pemetrexed"), ]
+nt_stage_pac <- nt_stage1[c(nt_stage1$drug_name =="Paclitaxel"), ]
+nt_stage_cis <- nt_stage1[c(nt_stage1$drug_name =="Cisplatin"), ]
+nt_stage_carb <- nt_stage1[c(nt_stage1$drug_name =="Carboplatin"), ]
+nt_stage_erl <- nt_stage1[c(nt_stage1$drug_name =="Erlotinib"), ]
+
+nt_stage <- rbind(nt_stage_pem, nt_stage_pac, nt_stage_cis, nt_stage_carb, nt_stage_erl)
+
+nt_stagei <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage i"), ]
+nt_stageii <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage ii"), ]
+nt_stageiii <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage iii"), ]
+nt_stageiv <- nt_stage[c(nt_stage$tumor_stage.diagnoses == "stage iv"), ]
+
+# Stage i
+stagei_nt_survival <- survfit(Surv(nt_stagei$days_to_new_tumor_event_after_initial_treatment,
+                                   nt_stagei$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stagei_nt_survival)                 
+plot(stagei_nt_survival, main="Months to New Tumor Event for Stage i ", xlab="Months", ylab="New Tumor Event")
+
+# Stage ii
+stageii_nt_survival <- survfit(Surv(nt_stageii$days_to_new_tumor_event_after_initial_treatment,
+                                    nt_stageii$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stageii_nt_survival)                 
+plot(stageii_nt_survival, main="Months to New Tumor Event for Stage ii ", xlab="Months", ylab="New Tumor Event")
+
+# Stage iii
+stageiii_nt_survival <- survfit(Surv(nt_stageiii$days_to_new_tumor_event_after_initial_treatment,
+                                     nt_stageiii$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stageiii_nt_survival)                 
+plot(stageiii_nt_survival, main="Months to New Tumor Event for Stage iii", xlab="Months", ylab="New Tumor Event")
+
+# Stage iv
+stageiv_nt_survival <- survfit(Surv(nt_stageiv$days_to_new_tumor_event_after_initial_treatment,
+                                    nt_stageiv$new_tumor_event_after_initial_treatment) ~ 1)
+summary(stageiv_nt_survival)                 
+plot(stageiv_nt_survival, main="Months to New Tumor Event for Stage iv", xlab="Months", ylab="New Tumor Event")
+
+
+nt_survival_stage <- survdiff(Surv(nt_stage$days_to_new_tumor_event_after_initial_treatment,
+                                   nt_stage$new_tumor_event_after_initial_treatment)
+                              ~ nt_stage$tumor_stage.diagnoses)
+nt_survival_stage
+
+# New Tumor Survival Analysis By Drug and Stage
+
+nt_survival_stage_drug <- survdiff(Surv(nt_stage$days_to_new_tumor_event_after_initial_treatment,
+                                        nt_stage$new_tumor_event_after_initial_treatment)
+                                   ~ nt_stage$tumor_stage.diagnoses + nt_stage$drug_name)
+
+nt_survival_stage_drug
