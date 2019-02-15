@@ -44,6 +44,15 @@ os_drug_stage_erl_survival
 
 ##Survdiff more complicated...
 
+os_stage_pem <- os_stage1[c(os_stage1$drug_name =="Pemetrexed"), ]
+os_stage_pac <- os_stage1[c(os_stage1$drug_name =="Paclitaxel"), ]
+os_stage_cis <- os_stage1[c(os_stage1$drug_name =="Cisplatin"), ]
+os_stage_carb <- os_stage1[c(os_stage1$drug_name =="Carboplatin"), ]
+os_stage_erl <- os_stage1[c(os_stage1$drug_name =="Erlotinib"), ]
+
+os_stage <- rbind(os_stage_pem, os_stage_pac, os_stage_cis, os_stage_carb, os_stage_erl)
+dim(os_stage)
+
 # OS for Stage i and Drug
 
 os_stage_i <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage i"), ]
