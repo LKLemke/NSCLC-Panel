@@ -42,3 +42,40 @@ os_drug_stage_erl_survival <- survdiff(Surv(os_drug_stage_erl$X_TIME_TO_EVENT, o
                                        ~ as.factor(os_drug_stage_erl$tumor_stage.diagnoses))
 os_drug_stage_erl_survival
 
+##Survdiff more complicated...
+
+# OS for Stage i and Drug
+
+os_stage_i <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage i"), ]
+
+os_stage_i_survival <- survdiff(Surv(os_stage_i$X_TIME_TO_EVENT, 
+                                     os_stage_i$X_EVENT) ~ as.factor(os_stage_i$drug_name))
+
+os_stage_i_survival
+
+# OS for Stage ii and Drug
+
+os_stage_ii <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage ii"), ]
+
+os_stage_ii_survival <- survdiff(Surv(os_stage_ii$X_TIME_TO_EVENT, 
+                                      os_stage_ii$X_EVENT) ~ as.factor(os_stage_ii$drug_name))
+
+os_stage_ii_survival
+
+# OS for Stage iii and Drug
+
+os_stage_iii <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage iii"), ]
+
+os_stage_iii_survival <- survdiff(Surv(os_stage_iii$X_TIME_TO_EVENT, 
+                                       os_stage_iii$X_EVENT) ~ as.factor(os_stage_iii$drug_name))
+
+os_stage_iii_survival
+
+# OS for Stage iv and Drug
+
+os_stage_iv <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage iv"), ]
+
+os_stage_iv_survival <- survdiff(Surv(os_stage_iv$X_TIME_TO_EVENT, 
+                                      os_stage_iv$X_EVENT) ~ as.factor(os_stage_iv$drug_name))
+
+os_stage_iv_survival
