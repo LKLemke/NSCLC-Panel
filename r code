@@ -285,18 +285,19 @@ nt_ddt_survival <- survdiff(Surv(nt_ddt$days_to_new_tumor_event_after_initial_tr
 nt_ddt_survival
 
 ###Years Smoked/nt
+nt_ys1 <- merge(ys, nt, by = "sample")
+nt_ys <- na.omit(nt_ys1)
+dim(nt_ys)
+
+nt_ys_survival <- survdiff(Surv(nt_ys$days_to_new_tumor_event_after_initial_treatment, nt_ys$new_tumor_event_after_initial_treatment)
+                            ~ nt_ys$years_smoked.exposures)
+nt_ys_survival
 
 ###Cigarettes per Day/nt
+nt_cpd1 <- merge(cpd, nt, by = "sample")
+nt_cpd <- na.omit(nt_cpd1)
+dim(nt_cpd)
 
-nt_cpd <- merge(nt, cpd, by = "sample")
-
-##NOT WORKING
-nt_cpd[which(nt_cpd$cigarettes_per_day.exposures < 1)] <- "a"
-nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 1 & nt_cpd$cigarettes_per_day.exposures < 2)] <- "b"
-nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 2 & nt_cpd$cigarettes_per_day.exposures < 3)] <- "c"
-nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 3 & nt_cpd$cigarettes_per_day.exposures < 4)] <- "d"
-nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 4 & nt_cpd$cigarettes_per_day.exposures < 5)] <- "e"
-nt_cpd[which(nt_cpd$cigarettes_per_day.exposures > 5 & nt_cpd$cigarettes_per_day.exposures < 6)] <- "f"
-
-nt_survival_cpd <- survdiff(Surv(nt_cpd$days_to_new_tumor_event_after_initial_treatment,
-                                 nt_cpd$new_tumor_event_after_initial_treatment) ~ nt_cpd$cigarettes_per_day.exposures)
+nt_cpd_survival <- survdiff(Surv(nt_cpd$days_to_new_tumor_event_after_initial_treatment, nt_cpd$new_tumor_event_after_initial_treatment)
+                           ~ nt_cpd$cigarettes_per_day.exposures)
+nt_cpd_survival
