@@ -172,9 +172,24 @@ cnvdat1 <- read.delim("tcga-luad.cnv.tsv.txt", header = TRUE)
 colnames(cnvdat1)[which(colnames(cnvdat1) == 'SAMPLE_ID')] <- 'sample'
 cnvdat <- cnvdat1[ ,-1]
 
+os_cnv <- merge(cnvdat, os_sample, by = "sample")
 
 #SURVIVAL ANALYSIS
 library(survival)
+
+Surv.luad <- Surv(event=os_mut$X_EVENT, time=os_mut$X_TIME_TO_EVENT)
+
+library(glmnet)
+luadCOX.cv <- cv.glmnet(t(luad.clara$medoids), Surv.luad, family="cox", alpha=1, nfolds=10)
+luadCOX <- glmnet(t(luad.clara$medoids), Surv.luad, family="cox", alpha=1, lambda=luadCOX.cv$lambda.min)
+
+library(randomForestSRC)
+temp <- cbind.data.frame("event"=luad.surv.2$X_EVENT, "time"=luad.surv.2$X_TIME_TO_EVENT, t(luad.clara$medoids))
+luadRF <- rfsrc(Surv(time, event) ~ ., data=temp, ntree = 500, block.size = 10, importance=TRUE)
+
+par(cex=0.25, mar=c(1,14,2,2))
+barplot(sort(luadRF$importance), horiz=TRUE, las=1)
+
 
 ##OVERALL SURVIVAL
 
@@ -189,6 +204,14 @@ os_mut_survival_ERBB2
 ###RET/os
 os_mut_survival_RET <- survdiff(Surv(os_mut$X_TIME_TO_EVENT, os_mut$X_EVENT) ~ os_mut$RET_mutated)
 os_mut_survival_RET
+
+###MET/os
+os_cnv_survival_MET <- survdiff(Surv(os_cnv$X_TIME_TO_EVENT, os_cnv$X_EVENT) ~ os_cnv$MET)
+os_cnv_survival_MET
+
+###FGFR1/os
+os_cnv_survival_FGFR1 <- survdiff(Surv(os_cnv$X_TIME_TO_EVENT, os_cnv$X_EVENT) ~ os_cnv$FGFR1)
+os_cnv_survival_FGFR1
 
 ###KRAS/os
 os_mut_survival_KRAS <- survdiff(Surv(os_mut$X_TIME_TO_EVENT, os_mut$X_EVENT) ~ os_mut$KRAS_mutated)
@@ -219,45 +242,6 @@ dim(os_drug)
 os_drug_survival <- survdiff(Surv(os_drug$X_TIME_TO_EVENT, os_drug$X_EVENT) ~ os_drug$drug_name)
 os_drug_survival
 
-####Kaplan-Meier for OS By Drug
-os_pemetrexed1 <- merge(pemetrexed, os, by = "sample")
-os_pemetrexed <- na.omit(os_pemetrexed1)
-
-os_pemetrexed_survival <- survfit(Surv(os_pemetrexed$X_TIME_TO_EVENT, os_pemetrexed$X_EVENT) ~ 1)
-summary(os_pemetrexed_survival)                  
-plot(os_pemetrexed_survival, main="OS on Pemetrexed", xlab="Months", ylab="Overall Survival")
-
-
-os_paclitaxel1 <- merge(paclitaxel, os, by = "sample")
-os_paclitaxel <- na.omit(os_paclitaxel1)
-
-os_paclitaxel_survival <- survfit(Surv(os_paclitaxel$X_TIME_TO_EVENT, os_paclitaxel$X_EVENT) ~ 1)
-summary(os_paclitaxel_survival)
-plot(os_paclitaxel_survival, main="OS on Paclitaxel", xlab="Months", ylab="Overall Survival")
-
-
-os_cisplatin1 <- merge(cisplatin, os, by = "sample")
-os_cisplatin <- na.omit(os_cisplatin1)
-
-os_cisplatin_survival <- survfit(Surv(os_cisplatin$X_TIME_TO_EVENT, os_cisplatin$X_EVENT) ~ 1)
-summary(os_cisplatin_survival)
-plot(os_cisplatin_survival, main="OS on Cisplatin", xlab="Months", ylab="Overall Survival")
-
-
-os_carboplatin1 <- merge(carboplatin, os, by = "sample")
-os_carboplatin <- na.omit(os_carboplatin1)
-
-os_carboplatin_survival <- survfit(Surv(os_carboplatin$X_TIME_TO_EVENT, os_carboplatin$X_EVENT) ~ 1)
-summary(os_carboplatin_survival)
-plot(os_carboplatin_survival, main="OS on Carboplatin", xlab="Months", ylab="Overall Survival")
-
-
-os_erlotinib1 <- merge(erlotinib, os, by = "sample")
-os_erlotinib <- na.omit(os_erlotinib1)
-
-os_erlotinib_survival <- survfit(Surv(os_erlotinib$X_TIME_TO_EVENT, os_erlotinib$X_EVENT) ~ 1)
-summary(os_erlotinib_survival)
-plot(os_erlotinib_survival, main="OS on Erlotinib", xlab="Months", ylab="Overall Survival")
 
 ###Stage/OS
 os_stage1 <- merge(stage, os,
@@ -268,27 +252,6 @@ os_stage_survival <- survdiff(Surv(os_stage$X_TIME_TO_EVENT, os_stage$X_EVENT)
                               ~ os_stage$tumor_stage.diagnoses)
 os_stage_survival
 
-####Kaplan-Meiers
-stagei <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage i"), ]
-stageii <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage ii"), ]
-stageiii <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage iii"), ]
-stageiv <- os_stage[c(os_stage$tumor_stage.diagnoses == "stage iv"), ]
-
-stagei_survival <- survfit(Surv(stagei$X_TIME_TO_EVENT, stagei$X_EVENT) ~ 1)
-summary(stagei_survival)                    
-plot(stagei_survival, main="OS for Stage i ", xlab="Months", ylab="Overall Survival")
-
-stageii_survival <- survfit(Surv(stageii$X_TIME_TO_EVENT, stageii$X_EVENT) ~ 1)
-summary(stageii_survival)                        
-plot(stageii_survival, main="OS for Stage ii ", xlab="Months", ylab="Overall Survival")
-
-stageiii_survival <- survfit(Surv(stageiii$X_TIME_TO_EVENT, stageiii$X_EVENT) ~ 1)
-summary(stageiii_survival)                        
-plot(stageiii_survival, main="OS for Stage iii ", xlab="Months", ylab="Overall Survival")
-
-stageiv_survival <- survfit(Surv(stageiv$X_TIME_TO_EVENT, stageiv$X_EVENT) ~ 1)
-summary(stageiv_survival)                        
-plot(stageiv_survival, main="OS for Stage iv ", xlab="Months", ylab="Overall Survival")
 
 ###Stage+Drug/OS
 os_stage_drug1 <- merge(os_stage, drug,
@@ -300,6 +263,7 @@ os_stage_drug_survival <- survdiff(Surv(os_stage_drug$X_TIME_TO_EVENT, os_stage_
                                    ~ os_stage_drug$drug_name + os_stage_drug$tumor_stage.diagnoses)
 os_stage_drug_survival
 
+
 ###Race/OS
 os_race1 <- merge(race, os,
                   by = "sample")
@@ -309,6 +273,7 @@ dim(os_race)
 os_race_survival <- survdiff(Surv(os_race$X_TIME_TO_EVENT, os_race$X_EVENT)
                              ~ os_race$race.demographic)
 os_race_survival
+
 
 ###Gender/OS
 os_gender1 <- merge(gender, os,
@@ -430,6 +395,66 @@ nt <-na.omit(nt1)
 nt$new_tumor_event_after_initial_treatment <- gsub("NO", "0", nt$new_tumor_event_after_initial_treatment)
 nt$new_tumor_event_after_initial_treatment <- gsub("YES", "1", nt$new_tumor_event_after_initial_treatment)
 nt$new_tumor_event_after_initial_treatment <- as.numeric(as.character(nt$new_tumor_event_after_initial_treatment))
+
+nt_sample <- nt
+nt_sample$sample <- substr(nt_sample$sample, start = 1, stop = 15)
+table(duplicated(nt_sample$sample))
+duplicates_nt <- unique(nt_sample$sample[duplicated(nt_sample$sample)])
+dup.df_nt <- nt_sample[nt_sample$sample %in% duplicates_nt,]
+nt_sample <- nt_sample[! duplicated(nt_sample$sample),]
+table(duplicated(nt_sample$sample))
+
+nt_mut <- merge(mutdat, nt_sample, by = 'sample')
+nt_cnv <- merge(cnvdat, nt_sample, by = "sample")
+
+
+###EGFR/nt
+nt_mut_survival_EGFR <- survdiff(Surv(nt_mut$days_to_new_tumor_event_after_initial_treatment,
+                                      nt_mut$new_tumor_event_after_initial_treatment)~ nt_mut$EGFR_mutated)
+nt_mut_survival_EGFR
+
+###ERBB2/nt
+nt_mut_survival_ERBB2 <- survdiff(Surv(nt_mut$days_to_new_tumor_event_after_initial_treatment,
+                                       nt_mut$new_tumor_event_after_initial_treatment) ~ nt_mut$ERBB2_mutated)
+nt_mut_survival_ERBB2
+
+###RET/nt
+nt_mut_survival_RET <- survdiff(Surv(nt_mut$days_to_new_tumor_event_after_initial_treatment,
+                                     nt_mut$new_tumor_event_after_initial_treatment) ~ nt_mut$RET_mutated)
+nt_mut_survival_RET
+
+###MET/nt
+nt_cnv_survival_MET <- survdiff(Surv(nt_cnv$days_to_new_tumor_event_after_initial_treatment,
+                                     nt_cnv$new_tumor_event_after_initial_treatment) ~ nt_cnv$MET)
+nt_cnv_survival_MET
+
+###FGFR1/nt
+nt_cnv_survival_FGFR1 <- survdiff(Surv(nt_cnv$days_to_new_tumor_event_after_initial_treatment, 
+                                       nt_cnv$new_tumor_event_after_initial_treatment) ~ nt_cnv$FGFR1)
+nt_cnv_survival_FGFR1
+
+###KRAS/nt
+nt_mut_survival_KRAS <- survdiff(Surv(nt_mut$days_to_new_tumor_event_after_initial_treatment, 
+                                      nt_mut$new_tumor_event_after_initial_treatment) ~ nt_mut$KRAS_mutated)
+nt_mut_survival_KRAS
+
+###BRAF/nt
+nt_mut_survival_BRAF <- survdiff(Surv(nt_mut$days_to_new_tumor_event_after_initial_treatment, 
+                                      nt_mut$new_tumor_event_after_initial_treatment) ~ nt_mut$BRAF_mutated)
+nt_mut_survival_BRAF
+
+###PIK3CA/os
+nt_mut_survival_PIK3CA <- survdiff(Surv(nt_mut$days_to_new_tumor_event_after_initial_treatment, 
+                                        nt_mut$new_tumor_event_after_initial_treatment) ~ nt_mut$PIK3CA_mutated)
+nt_mut_survival_PIK3CA
+
+###PTEN/os
+nt_mut_survival_PTEN <- survdiff(Surv(nt_mut$days_to_new_tumor_event_after_initial_treatment, 
+                                      nt_mut$new_tumor_event_after_initial_treatment) ~ nt_mut$PTEN_mutated)
+nt_mut_survival_PTEN
+
+###H3F3A/nt
+#no variants :(
 
 ###Drug/nt
 nt_drug1 <- merge(drug, nt,
@@ -563,4 +588,3 @@ nt_cpd_ys_survival <- survdiff(Surv(nt_cpd_ys$days_to_new_tumor_event_after_init
                                ~ nt_cpd_ys$cigarettes_per_day.exposures + nt_cpd_ys$years_smoked.exposures)
 nt_cpd_ys_survival
 
-#######MORE
